@@ -33,11 +33,6 @@ class LoginController extends Controller
      * @return void
      */
     public function __construct() {
-        $this->middleware('auth', ['except' => 'userLogin']);
-    }
-
-    public function currentUser(Request $request) {
-        return response()->json(["user" => auth()->user()]);
     }
 
     public function userLogin(Request $request) {
