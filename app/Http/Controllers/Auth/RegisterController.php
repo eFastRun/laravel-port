@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\auth\UserVerify;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Exception;
 use Illuminate\Auth\Events\Registered;
 
 class RegisterController extends Controller
@@ -27,7 +31,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/activate';
+    protected $redirectTo = '';
 
     /**
      * Create a new controller instance.
@@ -36,137 +40,87 @@ class RegisterController extends Controller
      */
     public function __construct() { }
 
+    /**
+     * Returning Random string with specified strength.
+     *
+     * @param  integer strength
+     * @return string
+     */
+    public function generate_string($strength = 16) {
+        $input = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $input_length = strlen($input);
+        $random_string = '';
+        for($i = 0; $i < $strength; $i++) {
+            $random_character = $input[mt_rand(0, $input_length - 1)];
+            $random_string .= $random_character;
+        }
+
+        return $random_string;
+    }
+
+    /**
+     * Register new user
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
+     */
     public function register(Request $request) {
         $validator = Validator::make($request->all(), [
-            'firstName' => 'required',
-            'lastName' => 'required',
+            'country' => 'required',
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|min:6',
         ]);
 
         if ($validator->passes()) {
             // Store your user in database
-            $result = $this->create($request->all());
-            if (isset($result['success']) && $result['success'] == true) {
-                return response($result, $result['code']);
-            } else {
-                return response(array(
-                    'success' => false,
-                    'message' => 'An error occurred when storing user',
-                    'code' => $result['code']
-                ), $result['code']);
+            $user=new User();
+            $user->country = $request->input('country');
+            $user->email = $request->input('email');
+            $user->password = Hash::make($request->input('password'));
+
+            if($user->save()){
+               $sendResult = $this->sendEmailVerification($request,$user);
+
+                if ($sendResult != 'success') {
+                    return response(["success" => false, "message" => 'Error caused when sending email verification code'], '200');
+                }
             }
+
+            return response(["success" => true, 'message' => 'User registered successfully', "user" => $user], '200');
         }
 
-        return response(['errors' => $validator->errors()], '400');
+        return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
     }
 
-    protected function create(array $data)
-    {
-        $referalCode = isset($data['referalCode']) ? $data['referalCode'] : NULL;
+    /**
+     * Send Email Verification code to user's email
+     * 
+     * @param mixed $request
+     * @param mixed $user
+     * @return string
+     */
+    public function sendEmailVerification($request, $user){
+        $token = $this->generate_string(6);
 
-        $vals = array(
-            'fullName' => $data['firstName']." ".$data['lastName'],
-            'email' => $data['email'],
-        );
+        UserVerify::create([
+            'user_id' => $user->id,
+            'token' => $token
+        ]);
 
-        $vals['password'] = Hash::make($data['password']);
+        try{
+            Mail::send('website.auth.email.emailVerificationEmail', ['token' => $token], function($message) use($request){
+                $message->from('us@example.com', 'Laravel');
 
-        if ($referalCode != NULL)
-            $vals['referalCode'] = $referalCode;
+                $message->to($request->email);
 
-        try {
-            $user = User::create($vals);
-            
-            return array(
-                'success' => true,
-                'user' => $user,
-                'code' => 200
-            );
-        } catch (\Exception $e) {
-            return array(
-                'success' => false,
-                'code' => $e->getResponse()->getStatusCode()
-            );
+                $message->subject('Email Verification Mail');
+            });
+        } catch(Exception $ex) {
+            dd($ex->getResponse());
+
+            return 'email failed to be sent';
         }
+
+        return 'success';
     }
 }
-
-/////////////////// Store user to OneLiquidity
-// try {
-//     $client = new Client();
-
-//     $res = $client->request('POST', 'https://sandbox-api.oneliquidity.technology/integrator/v1/register', [
-//         'body' => json_encode($vals),
-//         'headers' => [
-//             'accept' => 'application/json',
-//             'content-type' => 'application/json',
-//         ],
-//     ]);
-
-//     $result = json_decode($res->getBody()->getContents());
-
-//     $vals['password'] = Hash::make($data['password']);
-
-//     if ($result->message == 'Ok') {
-//         $vals['integratorId'] = $result->data->integratorId;
-
-//         $user = User::create($vals);
-
-//         return array(
-//             'success' => true,
-//             'user' => $user,
-//             'result' => $result,
-//             'integratorId' => $result->data->integratorId,
-//             'code' => 200
-//         );
-//     } else {
-//         return array(
-//             'success' => true,
-//             'message' => 'IntegratorId does not exist',
-//             'error' => $result,
-//             'code' => 403
-//         );
-//     }
-// } catch (\GuzzleHttp\Exception\ClientException $e) {
-//     return array(
-//         'success' => false,
-//         'message' => 'GuzzleHttp request error',
-//         'error' => json_decode($e->getResponse()->getBody()->getContents()),
-//         'code' => $e->getResponse()->getStatusCode()
-//     );
-// }
-
-/////////////////// get IntegratorId
-// try {
-//     $client = new Client();
-
-//     $integratorId = $result['integratorId'];
-
-//     $vals = array('email' => $result['user']['email']);
-
-//     $verifyRes = $client->request('POST', 'https://sandbox-api.oneliquidity.technology/integrator/v1/verify', [
-//         'body' => json_encode($vals),
-//         'headers' => [
-//             'accept' => 'application/json',
-//             'authorization' => 'Bearer '.$integratorId,
-//             'content-type' => 'application/json',
-//         ],
-//     ]);
-
-//     $verifyResult = json_decode($verifyRes->getBody()->getContents());
-
-//     if ($verifyResult->message == "Ok") {
-//         event(new Registered($result['user']));
-//         return response($result, $result['code']);
-//     } else {
-//         return response('Email Verification Failed', 403);
-//     }
-// } catch (\GuzzleHttp\Exception\ClientException $e) {
-//     return array(
-//         'success' => false,
-//         'message' => 'GuzzleHttp request error',
-//         'error' => json_decode($e->getResponse()->getBody()->getContents()),
-//         'code' => $e->getResponse()->getStatusCode()
-//     );
-// }
