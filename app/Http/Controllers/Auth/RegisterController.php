@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\auth\UserVerify;
+use App\Mail\SendMail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -108,15 +109,9 @@ class RegisterController extends Controller
         ]);
 
         try{
-            Mail::send('website.auth.email.emailVerificationEmail', ['token' => $token], function($message) use($request){
-                $message->from('us@example.com', 'Laravel');
-
-                $message->to($request->email);
-
-                $message->subject('Email Verification Mail');
-            });
-        } catch(Exception $ex) {
-            dd($ex->getResponse());
+            Mail::to($request->email)->send(new SendMail($token));
+        } catch(\Exception $ex) {
+            dd($ex);
 
             return 'email failed to be sent';
         }

@@ -8,11 +8,7 @@
 </head>
 
 <body>
-    <p style="margin:0; "><a href="{{ route('user.verify', $token) }}"
-            style="background: #27ae60; text-decoration: none; padding: 10px 25px; color: #ffffff; border-radius: 4px; display:inline-block; mso-padding-alt:0;text-underline-color:#ff3884">
-            <!--[if mso]><i style="letter-spacing: 25px;mso-font-width:-100%;mso-text-raise:20pt">&nbsp;</i><![endif]-->
-            <span style="mso-text-raise:10pt;font-weight:bold;">تأكيد الايميل</span>
-        </a></p>
+    Your Verification Code: {{$token}}
 </body>
 
 </html>
