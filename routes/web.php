@@ -26,6 +26,9 @@ Route::group(['middleware' => ['guest']], function () {
     Route::prefix('/user')->group(function () {
         Route::post('/login', [LoginController::class, 'userLogin'])->name('login.post');
         Route::post('/register', [RegisterController::class, 'register'])->name('register.post');
+
+        Route::post('/verifyCode', [RegisterController::class, 'sendEmailAgain'])->name('request.verify.email');
+        Route::post('/verify', [RegisterController::class, 'verifyAccount'])->name('verify.account');
     });
 });
 

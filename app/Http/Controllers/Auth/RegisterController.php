@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\auth\UserVerify;
 use App\Mail\SendMail;
+use App\Mail\VerifySuccess;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -83,7 +84,7 @@ class RegisterController extends Controller
                $sendResult = $this->sendEmailVerification($request,$user);
 
                 if ($sendResult != 'success') {
-                    return response(["success" => false, "message" => 'Error caused when sending email verification code'], '200');
+                    return response(["success" => false, "message" => 'Error caused when sending email verification code'], '400');
                 }
             }
 
@@ -111,11 +112,82 @@ class RegisterController extends Controller
         try{
             Mail::to($request->email)->send(new SendMail($token));
         } catch(\Exception $ex) {
-            dd($ex);
-
             return 'email failed to be sent';
         }
 
         return 'success';
+    }
+
+    /**
+     * Send Email verification again
+     * 
+     */
+    public function sendEmailAgain(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users',
+        ]);
+
+        if ($validator->passes()) {
+            $token = $this->generate_string(6);
+
+            $user = User::where('email', $request->email)->get()->first();
+    
+            UserVerify::create([
+                'user_id' => $user->id,
+                'token' => $token
+            ]);
+
+            try{
+                Mail::to($request->email)->send(new SendMail($token));
+            } catch(\Exception $ex) {
+                return response(['success' => false, 'message' => 'email failed to be sent'], '400');
+            }
+
+            return response(['success' => true, 'message' => 'Resent Email Verification Code Successfully'], '200');
+        }
+        
+        return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
+    }
+
+    /**
+     * Verify user account
+     *
+     * @return response()
+     */
+    public function verifyAccount(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string|size:6',
+        ]);
+        
+        if ($validator->passes()) {
+            $token = $request->token;
+
+            $verifyUser = UserVerify::where('token', $token)->first();
+  
+            if(!is_null($verifyUser) ){
+                $user = $verifyUser->user;
+
+                if(!$user->is_email_verified) {
+                    $verifyUser->user->is_email_verified = 1;
+                    $verifyUser->user->save();
+
+                    try{
+                        Mail::to($verifyUser->user->email)->send(new VerifySuccess());
+                    } catch(\Exception $ex) {
+                        return response(['success' => false, 'message' => 'email failed to be sent'], '400');
+                    }
+
+                    return response(['success' => false, 'message' => 'Successfully Verified Your Email.'], '200');
+                } else {
+                    return response(['success' => false, 'message' => 'Sorry your email cannot be identified. You already verified your email.'], '400');
+                }
+            }
+
+            return response(['success' => false, 'message' => 'Sorry your email cannot be identified. Your email not exists.'], '400');
+        }
+        
+        return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
     }
 }
