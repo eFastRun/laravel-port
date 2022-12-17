@@ -37,27 +37,33 @@ class LoginController extends Controller
 
     public function userLogin(Request $request) {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|max:255|exists:users',
+            'email' => 'required|email|min:3|max:255|exists:users',
             'password' => 'required|min:6',
         ]);
 
         if ($validator->passes()) {
-            // return response(["authenticated" => auth()->check()]);
-
             if (auth()->check() == true) {
-                return response(["success" => false, "errors" => "You already joined"]);
+                return response(["success" => false, "errors" => "You already joined"], '401');
             }
 
-            $user = auth()->attempt($request->only('email', 'password'));
+            $status = auth()->attempt(['email' => $request->email, 'password' => $request->password]);
 
-            if ($user) {
-                return response(["success" => true, "user" => auth()->user()]);
+            if ($status) {
+                if (auth()->user()->is_active == 0) {
+                    return response(["success" => false, "message" => "Your account is restricted. Contact with our support team."], '401');
+                }
+
+                if (auth()->user()->is_email_verified == 0) {
+                    return response(["success" => false, "message" => "Verify your email first."], '401');
+                }
+
+                return response(["success" => true, 'message' => 'Successfully signed in', "user" => auth()->user()], '200');
             }
 
-            return response(["success" => false, "errors" => "User or password invalid"]);
+            return response(["success" => false, "message" => "User or password invalid"], '403');
         }
 
-        return response(["success" => false, "errors" => $validator->errors()]);
+        return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
     }
 
     /**

@@ -12,8 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
-use Exception;
 use Illuminate\Auth\Events\Registered;
+use Exception;
 
 class RegisterController extends Controller
 {
@@ -160,12 +160,12 @@ class RegisterController extends Controller
         $validator = Validator::make($request->all(), [
             'token' => 'required|string|size:6',
         ]);
-        
+
         if ($validator->passes()) {
             $token = $request->token;
 
             $verifyUser = UserVerify::where('token', $token)->first();
-  
+
             if(!is_null($verifyUser) ){
                 $user = $verifyUser->user;
 
@@ -188,6 +188,42 @@ class RegisterController extends Controller
             return response(['success' => false, 'message' => 'Sorry your email cannot be identified. Your email not exists.'], '400');
         }
         
+        return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
+    }
+
+    /**
+     * Legal name
+     *
+     * @return response()
+     */
+    public function updateLegalName(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users',
+            'firstName' => 'required|string|min:2',
+            'lastName' => 'required|string|min:2',
+        ]);
+
+        if ($validator->passes()) {
+            $user = User::where('email', $request->email)->get()->first();
+
+            if(!is_null($user)){
+                if ($user->is_email_verified) {
+                    $user->firstName = $request->firstName;
+                    $user->lastName = $request->lastName;
+
+                    if($user->save()){
+                        return response(['success' => true, 'message' => 'Stored User Information Successfully.'], '200');
+                    } else {
+                        return response(['success' => false, 'message' => 'An error caused when storing data.'], '401');
+                    }
+                }
+
+                return response(['success' => false, 'message' => 'Please verify your email first.'], '403');
+            }
+
+            return response(['success' => false, 'message' => 'Your email not exists.'], '400');
+        }
+
         return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
     }
 }
