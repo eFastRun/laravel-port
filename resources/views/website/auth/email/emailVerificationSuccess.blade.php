@@ -8,7 +8,13 @@
 </head>
 
 <body>
-    Your Verification Code: {{$token}}
+    <pre>
+    Thanks very much.
+
+    Your Email Verified Successfully.
+
+    Palremit Team
+    </pre>
 </body>
 
 </html>
