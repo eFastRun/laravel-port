@@ -109,15 +109,11 @@ class RegisterController extends Controller
 
         try{
             Mail::send('website.auth.email.emailVerificationEmail', ['token' => $token], function($message) use($request){
-                $message->from('us@example.com', 'Laravel');
-
                 $message->to($request->email);
 
-                $message->subject('Email Verification Mail');
+                $message->subject('Email Verification');
             });
         } catch(Exception $ex) {
-            dd($ex->getResponse());
-
             return 'email failed to be sent';
         }
 
