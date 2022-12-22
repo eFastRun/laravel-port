@@ -3,8 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgetPasswordController;
-use App\Http\Controllers\IntegratorController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\CurrencyController;
 use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
@@ -43,4 +42,8 @@ Route::group(['middleware' => ['guest']], function () {
 
 Route::group(['middleware' => ['auth']], function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('user.logout');
+
+    Route::prefix('/currency')->group(function () {
+        Route::post('/addNewCurrency', [CurrencyController::class, 'addNewCurrency'])->name('currency.add.new');
+    });
 });

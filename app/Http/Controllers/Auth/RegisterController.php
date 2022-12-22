@@ -146,7 +146,7 @@ class RegisterController extends Controller
 
             return response(['success' => true, 'message' => 'Resent Email Verification Code Successfully'], '200');
         }
-        
+
         return response(['success' => false, 'message' => 'Validation Error', 'errors' => $validator->errors()], '400');
     }
 

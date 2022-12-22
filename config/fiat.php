@@ -15,15 +15,12 @@ return [
     |
     */
 
-    'baseUrl' => 'https://pro-api.coinmarketcap.com',
+    'baseUrl' => 'https://api.apilayer.com',
 
     'apis' => [
-        'listing' => '/v1/cryptocurrency/listings/latest',
-        'quotes' => '/v1/cryptocurrency/quotes/latest'
+        'rate' => '/currency_data/live',
     ],
 
     'api_key' => "AMVXEg2dAjW0wnUVNdiCfsvBlBSKOQ5c",
-
-    'coin' => ['btc' => 1, 'eth' => 1027, 'usdt' => 825, 'usdc' => 3408],
 
 ];
