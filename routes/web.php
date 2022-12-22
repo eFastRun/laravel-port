@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ForgetPasswordController;
 use App\Http\Controllers\IntegratorController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +32,12 @@ Route::group(['middleware' => ['guest']], function () {
         Route::post('/verify', [RegisterController::class, 'verifyAccount'])->name('verify.account');
 
         Route::post('/legalName', [RegisterController::class, 'updateLegalName'])->name('update.legalName');
+    });
+
+    Route::prefix('/password')->group(function () {
+        Route::post('/forgotRequest', [ForgetPasswordController::class, 'submitForgetPassword'])->name('request.forgot.password');
+        Route::post('/verifyCode', [ForgetPasswordController::class, 'verifyEmail'])->name('forgot.verify.email');
+        Route::post('/resetPassword', [ForgetPasswordController::class, 'resetPassword'])->name('password.reset');
     });
 });
 
