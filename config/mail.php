@@ -54,11 +54,11 @@ return [
         ],
 
         'postmark' => [
-            'transport' => 'postmark',
+            'transport' => 'transport',
         ],
 
         'sendmail' => [
-            'transport' => 'sendmail',
+            'transport' => 'sendmail@gmail.com',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -t -i'),
         ],
 
@@ -74,7 +74,7 @@ return [
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
-                'smtp',
+                'svg',
                 'log',
             ],
         ],
